@@ -1,19 +1,19 @@
 # 🔐 AuriVault [In the process of making]
 > *Illuminating your knowledge, securely*
 
-**AuriVault** is an enterprise-grade AI-powered knowledge management platform that transforms your documents into an intelligent, searchable knowledge base. Built for organizations that need secure, instant access to their institutional knowledge.
+**AuriVault** is an AI-powered knowledge management platform that transforms your documents into an intelligent, searchable knowledge base. Built for teams that need secure, instant access to their institutional knowledge.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-black?logo=next.js&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?logo=supabase&logoColor=white)
 ![tRPC](https://img.shields.io/badge/tRPC-398CCB?logo=trpc&logoColor=white)
 
 ---
+<img width="715" height="515" alt="Screenshot 2025-09-16 at 2 35 50 PM" src="https://github.com/user-attachments/assets/9899e19b-b507-45b7-8223-fee7fafc6c08" />
 
 ## 🌟 Vision
 
-**"Every organization has a goldmine of knowledge trapped in documents. AuriVault unlocks it."**
+**"Every team has a goldmine of knowledge trapped in documents. AuriVault unlocks it."**
 
 We're building the future of enterprise knowledge management - where finding information is as natural as asking a question, where insights emerge from data automatically, and where organizational knowledge becomes a strategic advantage.
 
@@ -45,14 +45,14 @@ We're building the future of enterprise knowledge management - where finding inf
 - **Multi-Document Synthesis**: Combine insights across your knowledge base
 - **Export & Share**: Generate reports and summaries instantly
 
-### 📊 Analytics & Insights
+### 📊 Analytics & Insights [Vision]
 - **Knowledge Gap Analysis**: Identify missing information
 - **Usage Analytics**: See what's being searched and accessed
 - **Content Performance**: Track document engagement and utility
 - **Team Insights**: Understand knowledge consumption patterns
 - **ROI Metrics**: Measure the value of your knowledge base
 
-### 🔧 Enterprise Features
+### 🔧 Enterprise Features [Future Prospectus]
 - **SSO Integration**: SAML, OIDC, Active Directory
 - **Role-Based Access**: Granular permissions and access controls
 - **API-First**: Full REST and GraphQL APIs
