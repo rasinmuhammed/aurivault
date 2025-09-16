@@ -27,16 +27,21 @@ model Tenant {
 }
 
 model Document {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  title       String
-  filename    String
-  mimeType    String
-  size        Int
-  uploadedBy  String?
-  uploadedAt  DateTime @default(now())
-  chunks      Chunk[]
+  id             String   @id @default(cuid())
+  title          String
+  filename       String
+  size           Int?
+  mimeType       String?
+  storageKey     String   // Supabase storage path
+  url            String?  // Public URL
+  status         String   @default("pending") // pending, processing, processed, error
+  userId         String
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Add any other fields you need
+  @@map("documents")
 }
 
 model Chunk {
