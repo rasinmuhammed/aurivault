@@ -11,7 +11,27 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import { auth } from "~/server/auth";
+import { auth } from "@clerk/nextjs/server";
+
+async function ensureTenantAndUser(params: { userId?: string | null; orgId?: string | null }) {
+  const { userId, orgId } = params;
+  if (!userId) return null;
+  // If no org, we treat tenant as null for single-tenant MVP
+  if (!orgId) return null;
+  // Upsert Tenant by orgId
+  await db.tenant.upsert({
+    where: { id: orgId },
+    update: {},
+    create: { id: orgId, name: orgId },
+  });
+  // Upsert User linking to tenant
+  await db.user.upsert({
+    where: { id: userId },
+    update: { tenantId: orgId },
+    create: { id: userId, email: `${userId}@placeholder.local`, tenantId: orgId },
+  });
+  return orgId;
+}
 import { db } from "~/server/db";
 
 /**
@@ -27,11 +47,12 @@ import { db } from "~/server/db";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const session = await auth();
-
+  const { userId, orgId } = await auth();
+  const tenantId = await ensureTenantAndUser({ userId, orgId });
   return {
     db,
-    session,
+    session: userId ? { user: { id: userId } } : null,
+    tenantId: tenantId ?? null,
     ...opts,
   };
 };
