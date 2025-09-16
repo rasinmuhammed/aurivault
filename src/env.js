@@ -8,6 +8,7 @@ export const env = createEnv({
    */
   server: {
     CLERK_SECRET_KEY: z.string(),
+    GROQ_API_KEY: z.string().optional(),
     DATABASE_URL: z.string().url(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -30,6 +31,7 @@ export const env = createEnv({
    */
   runtimeEnv: {
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
+    GROQ_API_KEY: process.env.GROQ_API_KEY,
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { embedText, MINILM_DIMENSIONS } from "~/server/ai/embeddings";
+import { embedText } from "~/server/ai/embeddings";
+import { generateAnswerWithGroq } from "~/server/ai/llm";
 
 export const ragRouter = createTRPCRouter({
   ask: protectedProcedure
@@ -34,9 +35,9 @@ export const ragRouter = createTRPCRouter({
         input.k,
       );
 
-      // Simple concatenation as MVP context
+      // Build context and call Groq LLM
       const context = results.map((r) => r.text).join("\n---\n");
-      const answer = `MVP answer (no LLM yet). Context:\n${context}`;
+      const answer = await generateAnswerWithGroq({ question: input.question, context });
 
       return {
         answer,
