@@ -129,7 +129,7 @@ const AuriVaultChat = () => {
   return (
     <div className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white flex flex-col">
       {/* Header */}
-      <header className="backdrop-blur-xl bg-slate-900/50 border-b border-slate-700 p-6">
+      <header className="backdrop-blur-xl panel p-6 border-b-0">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center relative">
@@ -369,7 +369,7 @@ const AuriVaultChat = () => {
           {/* Sidebar */}
           <div className="w-80 ml-6 space-y-6">
             {/* Session Stats */}
-            <div className="bg-slate-900/50 backdrop-blur border border-slate-700 rounded-2xl p-6">
+            <div className="panel p-6">
               <h3 className="font-semibold mb-4 text-amber-300 flex items-center">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Session Stats
@@ -399,7 +399,7 @@ const AuriVaultChat = () => {
             </div>
 
             {/* Knowledge Sources */}
-            <div className="bg-slate-900/50 backdrop-blur border border-slate-700 rounded-2xl p-6">
+            <div className="panel p-6">
               <h3 className="font-semibold mb-4 text-amber-300 flex items-center">
                 <FileText className="w-4 h-4 mr-2" />
                 Knowledge Sources

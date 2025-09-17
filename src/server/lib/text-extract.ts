@@ -1,19 +1,28 @@
-import pdfParse from "pdf-parse";
-import mammoth from "mammoth";
+// Dynamic imports to avoid Turbopack trying to read test fixtures at build
+let pdfParseFn: any | null = null;
+let mammothLib: any | null = null;
 
 export async function extractTextFromFile(
   buffer: Buffer,
   mimeType: string,
 ): Promise<string> {
   if (mimeType === "application/pdf") {
-    const res = await pdfParse(buffer);
+    if (!pdfParseFn) {
+      const mod = await import("pdf-parse");
+      pdfParseFn = mod.default ?? mod;
+    }
+    const res = await pdfParseFn(buffer);
     return res.text || "";
   }
   if (
     mimeType ===
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
   ) {
-    const { value } = await mammoth.extractRawText({ buffer });
+    if (!mammothLib) {
+      const mod = await import("mammoth");
+      mammothLib = mod.default ?? mod;
+    }
+    const { value } = await mammothLib.extractRawText({ buffer });
     return value || "";
   }
   if (mimeType.startsWith("text/")) {

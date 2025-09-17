@@ -5,9 +5,9 @@ export const documentsRouter = createTRPCRouter({
   list: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.tenantId) throw new Error("No tenant");
     const docs = await ctx.db.document.findMany({
-      where: { tenantId: ctx.tenantId },
-      orderBy: { uploadedAt: "desc" },
-      select: { id: true, title: true, filename: true, uploadedAt: true, size: true },
+      where: { organizationId: ctx.tenantId },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, title: true, filename: true, createdAt: true, size: true },
     });
     return docs;
   }),

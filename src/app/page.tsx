@@ -62,7 +62,7 @@ const AuriVaultLanding = () => {
       {/* Hero Section */}
       <section className="relative z-10 max-w-7xl mx-auto px-6 pt-20 pb-32">
         <div className="text-center">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 mb-8">
+          <div className="inline-flex items-center px-4 py-2 rounded-full badge-gold mb-8">
             <Zap className="w-4 h-4 text-amber-400 mr-2" />
             <span className="text-sm text-amber-300">Where Knowledge Glows, Securely</span>
           </div>
@@ -87,7 +87,7 @@ const AuriVaultLanding = () => {
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
             <button 
-              className="group relative px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-900 font-bold text-lg hover:shadow-2xl hover:shadow-amber-500/30 transform hover:scale-105 transition-all duration-300"
+              className="group relative btn-primary text-lg"
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
               onClick={() => window.location.assign('/chat')}
@@ -99,7 +99,7 @@ const AuriVaultLanding = () => {
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-600 to-yellow-700 blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
             </button>
             
-            <button className="flex items-center px-6 py-4 rounded-2xl border border-slate-600 hover:border-slate-500 bg-slate-900/50 backdrop-blur text-slate-300 hover:text-white transition-all" onClick={() => window.location.assign('/documents')}>
+            <button className="flex items-center btn-secondary" onClick={() => window.location.assign('/documents')}>
               <Play className="w-5 h-5 mr-2" />
               Watch Demo
             </button>

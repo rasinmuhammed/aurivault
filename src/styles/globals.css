@@ -27,3 +27,25 @@
 @utility border-gold {
 	border-color: color-mix(in oklab, var(--color-av-gold-start), transparent 65%);
 }
+
+/* Design tokens and utilities to reduce repetition */
+@layer utilities {
+	.btn-primary {
+		@apply inline-flex items-center justify-center rounded-2xl px-6 py-3 font-semibold text-slate-900 bg-gold-gradient hover:shadow-lg hover:shadow-amber-500/25 transition-all;
+	}
+	.btn-secondary {
+		@apply inline-flex items-center justify-center rounded-2xl px-6 py-3 border border-slate-600 bg-slate-900/50 text-slate-300 hover:text-white hover:border-slate-500 transition-all;
+	}
+	.panel {
+		@apply bg-slate-900/50 backdrop-blur border border-slate-700 rounded-2xl;
+	}
+	.card {
+		@apply bg-slate-900/50 backdrop-blur border border-slate-700 rounded-3xl;
+	}
+	.badge-gold {
+		@apply px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30;
+	}
+	.section-title {
+		@apply text-4xl md:text-6xl font-black;
+	}
+}

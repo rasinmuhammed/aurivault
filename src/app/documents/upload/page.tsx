@@ -446,7 +446,7 @@ const AuriVaultUpload = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Processing Pipeline */}
-            <div className="bg-slate-900/50 backdrop-blur border border-slate-700 rounded-2xl p-6">
+            <div className="panel p-6">
               <h3 className="font-semibold mb-4 text-amber-300 flex items-center">
                 <Zap className="w-5 h-5 mr-2" />
                 Processing Pipeline
@@ -473,7 +473,7 @@ const AuriVaultUpload = () => {
             </div>
 
             {/* Security Info */}
-            <div className="bg-slate-900/50 backdrop-blur border border-slate-700 rounded-2xl p-6">
+            <div className="panel p-6">
               <h3 className="font-semibold mb-4 text-amber-300 flex items-center">
                 <Lock className="w-5 h-5 mr-2" />
                 Security Features
@@ -512,7 +512,7 @@ const AuriVaultUpload = () => {
             </div>
 
             {/* Quick Stats */}
-            <div className="bg-slate-900/50 backdrop-blur border border-slate-700 rounded-2xl p-6">
+            <div className="panel p-6">
               <h3 className="font-semibold mb-4 text-amber-300">Processing Stats</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -535,7 +535,7 @@ const AuriVaultUpload = () => {
             </div>
 
             {/* Tips */}
-            <div className="bg-gradient-to-br from-amber-500/10 to-yellow-500/10 border border-amber-500/20 rounded-2xl p-6">
+            <div className="card border-amber-500/20 p-6">
               <div className="flex items-center space-x-2 mb-4">
                 <Sparkles className="w-5 h-5 text-amber-400" />
                 <h3 className="font-semibold text-amber-300">Pro Tips</h3>

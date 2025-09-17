@@ -8,22 +8,22 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  name       String?
-  tenantId   String
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 model Tenant {
-  id          String    @id @default(cuid())
-  name        String
-  domain      String?   @unique
-  createdAt   DateTime  @default(now())
-  users       User[]
-  documents   Document[]
-  queryLogs   QueryLog[]
+  id        String     @id @default(cuid())
+  name      String
+  domain    String?    @unique
+  createdAt DateTime   @default(now())
+  users     User[]
+  documents Document[]
+  queryLogs QueryLog[]
 }
 
 model Document {
@@ -32,35 +32,38 @@ model Document {
   filename       String
   size           Int?
   mimeType       String?
-  storageKey     String   // Supabase storage path
-  url            String?  // Public URL
+  storageKey     String // Supabase storage path
+  url            String? // Public URL
   status         String   @default("pending") // pending, processing, processed, error
   userId         String
   organizationId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  tenant Tenant? @relation(fields: [organizationId], references: [id])
+  chunks Chunk[]
+
   // Add any other fields you need
   @@map("documents")
 }
 
 model Chunk {
-  id           String   @id @default(cuid())
-  documentId   String
-  document     Document @relation(fields: [documentId], references: [id])
-  text         String   @db.Text
-  chunkIndex   Int
-  metadata     Json?
-  embedding    Embedding?
+  id         String     @id @default(cuid())
+  documentId String
+  document   Document   @relation(fields: [documentId], references: [id])
+  text       String     @db.Text
+  chunkIndex Int
+  metadata   Json?
+  embedding  Embedding?
 }
 
 model Embedding {
-  id        String   @id @default(cuid())
-  chunkId   String   @unique
-  chunk     Chunk    @relation(fields: [chunkId], references: [id])
-  vector    Bytes?   // legacy
+  id         String                      @id @default(cuid())
+  chunkId    String                      @unique
+  chunk      Chunk                       @relation(fields: [chunkId], references: [id])
+  vector     Bytes? // legacy
   vector_vec Unsupported("vector(384)")? // MiniLM-L6-v2 dims
-  createdAt DateTime @default(now())
+  createdAt  DateTime                    @default(now())
 }
 
 model QueryLog {
@@ -76,9 +79,10 @@ model QueryLog {
 }
 
 model Post {
-  id           String   @id @default(cuid())
-  name         String
-  createdAt    DateTime @default(now())
-  createdById  String?
+  id          String   @id @default(cuid())
+  name        String
+  createdAt   DateTime @default(now())
+  createdById String?
+
   @@index([createdById, createdAt])
 }

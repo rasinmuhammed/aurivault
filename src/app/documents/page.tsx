@@ -37,11 +37,9 @@ export default function DocumentsPage() {
   // Filter documents based on search and status
   const filteredDocuments = data?.filter((doc) => {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         doc.filename.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === "all" || 
-                         (filterStatus === "processed" && doc.status === "processed") ||
-                         (filterStatus === "processing" && doc.status === "processing");
-    return matchesSearch && matchesFilter;
+      doc.filename.toLowerCase().includes(searchTerm.toLowerCase());
+    // Status tracking not available in current API; include all
+    return matchesSearch;
   }) || [];
 
   const getStatusInfo = (status: string) => {
@@ -95,7 +93,7 @@ export default function DocumentsPage() {
     router.push("/documents/upload");
   };
 
-  const processedCount = data?.filter(d => d.status === "processed").length || 0;
+  const processedCount = data?.length || 0;
   const totalSize = data?.reduce((acc, doc) => acc + (doc.size || 0), 0) || 0;
 
   return (
@@ -297,7 +295,7 @@ export default function DocumentsPage() {
             ) : (
               <div className="divide-y divide-slate-700">
                 {filteredDocuments.map((doc) => {
-                  const statusInfo = getStatusInfo(doc.status || "pending");
+                  const statusInfo = getStatusInfo("pending");
                   
                   return (
                     <div key={doc.id} className="p-6 hover:bg-slate-800/30 transition-colors group">
@@ -317,7 +315,7 @@ export default function DocumentsPage() {
                             <div className="flex items-center space-x-4 mt-2">
                               <div className="flex items-center space-x-1 text-xs text-slate-500">
                                 <Calendar className="w-3 h-3" />
-                                <span>{formatDate(doc.createdAt)}</span>
+                                <span>{formatDate(doc.createdAt as unknown as Date)}</span>
                               </div>
                               {doc.size && (
                                 <div className="flex items-center space-x-1 text-xs text-slate-500">
@@ -325,22 +323,13 @@ export default function DocumentsPage() {
                                   <span>{formatFileSize(doc.size)}</span>
                                 </div>
                               )}
-                              {doc.author && (
-                                <div className="flex items-center space-x-1 text-xs text-slate-500">
-                                  <User className="w-3 h-3" />
-                                  <span>{doc.author}</span>
-                                </div>
-                              )}
+                              {/* author not available in current API */}
                             </div>
                           </div>
                         </div>
 
                         <div className="flex items-center space-x-3">
-                          {/* Status Badge */}
-                          <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${statusInfo.className}`}>
-                            {statusInfo.icon}
-                            <span>{statusInfo.text}</span>
-                          </div>
+                          {/* Status Badge - hidden as status not tracked */}
 
                           {/* Action Buttons */}
                           <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">

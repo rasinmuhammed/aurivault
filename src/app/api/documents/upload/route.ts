@@ -34,12 +34,13 @@ export async function POST(req: NextRequest) {
     // Create document record
     const document = await db.document.create({
       data: {
-        tenantId: orgId,
+        organizationId: orgId,
         title: file.name,
         filename: file.name,
         mimeType: file.type || "application/octet-stream",
         size: buffer.length,
-        uploadedBy: userId,
+        userId,
+        storageKey: `${orgId}/${file.name}`,
       },
     });
 

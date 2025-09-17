@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.0.0",
+    "@langchain/groq": "^0.0.14",
     "@neondatabase/serverless": "^1.0.1",
     "@prisma/client": "^6.5.0",
     "@supabase/supabase-js": "^2.57.4",
@@ -34,6 +35,7 @@
     "axios": "^1.12.2",
     "formidable": "^3.5.4",
     "groq-sdk": "^0.32.0",
+    "langchain": "^0.2.13",
     "lucide-react": "^0.544.0",
     "mammoth": "^1.10.0",
     "multer": "^2.0.2",
