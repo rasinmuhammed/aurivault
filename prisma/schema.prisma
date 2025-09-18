@@ -58,12 +58,16 @@ model Chunk {
 }
 
 model Embedding {
-  id         String                      @id @default(cuid())
-  chunkId    String                      @unique
-  chunk      Chunk                       @relation(fields: [chunkId], references: [id])
-  vector     Bytes? // legacy
-  vector_vec Unsupported("vector(384)")? // MiniLM-L6-v2 dims
-  createdAt  DateTime                    @default(now())
+  id         String  @id @default(cuid())
+  chunkId    String  @unique
+  vector_vec Unsupported("vector(1536)")?  // For OpenAI ada-002 embeddings
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  chunk Chunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+
+  @@map("embeddings")
+  @@index([vector_vec], type: Hash)  // Add vector index for performance
 }
 
 model QueryLog {
@@ -76,6 +80,23 @@ model QueryLog {
   citations  Json?
   confidence Float?
   createdAt  DateTime @default(now())
+}
+
+model ChatLog {
+  id               String   @id @default(cuid())
+  organizationId   String
+  userId           String
+  question         String
+  answer           String   @db.Text
+  confidence       Float?
+  processingTimeMs Int?
+  sourcesCount     Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("chat_logs")
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
 }
 
 model Post {

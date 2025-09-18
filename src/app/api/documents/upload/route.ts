@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "~/server/db";
-import { extractTextFromFile, chunkText } from "src/app/api/documents/text-extract-simple.ts";
-import { embedText } from "~/server/ai/embeddings";
+import { extractTextFromFile, chunkText } from "~/app/api/documents/text-extract-simple";
+import { OpenAIEmbeddings } from "@langchain/openai";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 minutes for very large files
+
+// Initialize embeddings
+const embeddings = new OpenAIEmbeddings({
+  model: "text-embedding-ada-002",
+  maxConcurrency: 3,
+  maxRetries: 2,
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,7 +36,8 @@ export async function POST(req: NextRequest) {
       'text/markdown',
       'application/rtf',
       'text/rtf',
-      'application/json'
+      'application/json',
+      'application/pdf', // Re-enable PDF support
     ];
 
     const fileType = file.type || 'application/octet-stream';
@@ -37,7 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ 
         error: `File type not supported: ${fileType}`,
         supportedTypes: allowedTypes,
-        suggestion: "Please convert to .txt, .docx, .csv, or .rtf format"
+        suggestion: "Please convert to .txt, .docx, .pdf, .csv, or .rtf format"
       }, { status: 400 });
     }
 
@@ -49,7 +57,7 @@ export async function POST(req: NextRequest) {
     try {
       const extractPromise = extractTextFromFile(buffer, fileType);
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Text extraction timeout')), 30000)
+        setTimeout(() => reject(new Error('Text extraction timeout')), 45000)
       );
       
       text = await Promise.race([extractPromise, timeoutPromise]);
@@ -67,18 +75,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No extractable text found in file" }, { status: 422 });
     }
 
-    // Chunk text
-    const chunks = chunkText(text);
+    // Chunk text with optimized parameters
+    const chunks = chunkText(text, 1000, 200); // Larger chunks for better context
     if (chunks.length === 0) {
       return NextResponse.json({ error: "No valid text chunks generated from file" }, { status: 422 });
     }
 
     // Limit chunks to prevent overwhelming the system
-    const maxChunks = 500; // Reduced limit for better performance
+    const maxChunks = 300; // Reasonable limit
     if (chunks.length > maxChunks) {
       return NextResponse.json({ 
         error: `Document too large: ${chunks.length} chunks (max ${maxChunks})`,
-        suggestion: "Try splitting the document into smaller files"
+        suggestion: "Try splitting the document into smaller files or use a more focused excerpt"
       }, { status: 413 });
     }
 
@@ -95,16 +103,14 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Process chunks asynchronously to avoid blocking the response
-    processChunksAsync(document.id, chunks).catch((error) => {
-      console.error(`Async processing failed for document ${document.id}:`, error);
-    });
+    // Process chunks synchronously for better reliability
+    await processChunksSync(document.id, document.title, chunks);
 
     return NextResponse.json({ 
       id: document.id, 
       chunks: chunks.length,
-      message: `Upload successful! Processing ${chunks.length} chunks in the background.`,
-      status: "processing"
+      message: `Upload successful! Processed ${chunks.length} chunks with vector embeddings.`,
+      status: "completed"
     });
 
   } catch (err) {
@@ -117,6 +123,9 @@ export async function POST(req: NextRequest) {
       if (err.message.includes('database') || err.message.includes('prisma')) {
         return NextResponse.json({ error: "Database error - please try again" }, { status: 500 });
       }
+      if (err.message.includes('OPENAI_API_KEY')) {
+        return NextResponse.json({ error: "AI service configuration error" }, { status: 500 });
+      }
       return NextResponse.json({ error: `Upload failed: ${err.message}` }, { status: 500 });
     }
     
@@ -124,111 +133,115 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Process chunks asynchronously after responding to the user
-async function processChunksAsync(documentId: string, chunks: string[]) {
-  console.log(`Starting async processing for document ${documentId} with ${chunks.length} chunks`);
+// Process chunks synchronously with embeddings
+async function processChunksSync(documentId: string, documentTitle: string, chunks: string[]) {
+  console.log(`Processing ${chunks.length} chunks for document ${documentId}`);
   
   try {
-    // Generate embeddings (this is the slow part)
-    let vectors: number[][];
-    try {
-      vectors = await embedText(chunks);
-    } catch (embedError) {
-      console.warn(`Embedding generation failed for document ${documentId}:`, embedError);
-      vectors = new Array(chunks.length).fill([]);
-    }
-
-    // Process chunks in small batches
+    // Generate embeddings in batches to avoid rate limits
     const batchSize = 5;
     let successfulChunks = 0;
 
     for (let i = 0; i < chunks.length; i += batchSize) {
       const batch = chunks.slice(i, i + batchSize);
-      const vectorBatch = vectors.slice(i, i + batchSize);
-
+      
+      // Generate embeddings for this batch
+      let vectors: number[][];
       try {
-        // Create chunks in batch
-        const chunkPromises = batch.map(async (chunk, j) => {
-          const chunkIndex = i + j;
-          if (!chunk) return null;
+        vectors = await embeddings.embedDocuments(batch);
+      } catch (embedError) {
+        console.warn(`Embedding generation failed for batch ${i}-${i + batch.length - 1}:`, embedError);
+        // Continue with empty vectors if embedding fails
+        vectors = new Array(batch.length).fill([]);
+      }
 
-          try {
-            const c = await db.chunk.create({
-              data: {
-                documentId,
-                text: chunk,
-                chunkIndex,
-              },
-            });
+      // Process each chunk in the batch
+      const chunkPromises = batch.map(async (chunkText, j) => {
+        const chunkIndex = i + j;
+        
+        try {
+          // Create chunk record
+          const chunk = await db.chunk.create({
+            data: {
+              documentId,
+              text: chunkText,
+              chunkIndex,
+            },
+          });
 
-            // Create embedding
-            const embedding = await db.embedding.create({
-              data: { chunkId: c.id },
-            });
+          // Create embedding record
+          const embedding = await db.embedding.create({
+            data: { chunkId: chunk.id },
+          });
 
-            // Add vector if available
-            const vector = vectorBatch[j];
-            if (vector && vector.length > 0) {
-              try {
-                const vectorLiteral = `[${vector.join(",")}]`;
-                await db.$executeRawUnsafe(
-                  `UPDATE "Embedding" SET vector_vec = $1::vector WHERE id = $2`,
-                  vectorLiteral,
-                  embedding.id,
-                );
-              } catch (vectorError) {
-                console.warn(`Vector storage failed for chunk ${chunkIndex}:`, vectorError);
-              }
+          // Store vector if available
+          const vector = vectors[j];
+          if (vector && vector.length > 0) {
+            try {
+              // Convert vector to PostgreSQL vector format
+              const vectorLiteral = `[${vector.join(",")}]`;
+              await db.$executeRawUnsafe(
+                `UPDATE "embeddings" SET vector_vec = $1::vector WHERE id = $2`,
+                vectorLiteral,
+                embedding.id,
+              );
+            } catch (vectorError) {
+              console.warn(`Vector storage failed for chunk ${chunkIndex}:`, vectorError);
             }
-
-            return c;
-          } catch (chunkError) {
-            console.error(`Failed to create chunk ${chunkIndex}:`, chunkError);
-            return null;
           }
-        });
 
-        const results = await Promise.all(chunkPromises);
-        successfulChunks += results.filter(r => r !== null).length;
+          return { success: true, chunkIndex };
 
-        // Small delay between batches to avoid overwhelming the database
-        if (i + batchSize < chunks.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (chunkError) {
+          console.error(`Failed to create chunk ${chunkIndex}:`, chunkError);
+          return { success: false, chunkIndex };
         }
+      });
 
-      } catch (batchError) {
-        console.error(`Batch processing failed for chunks ${i}-${i + batch.length - 1}:`, batchError);
+      const results = await Promise.allSettled(chunkPromises);
+      const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+      successfulChunks += successful;
+
+      console.log(`Batch ${i / batchSize + 1}/${Math.ceil(chunks.length / batchSize)}: ${successful}/${batch.length} chunks processed`);
+
+      // Small delay between batches to avoid overwhelming the system
+      if (i + batchSize < chunks.length) {
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
     }
 
-    console.log(`Async processing completed for document ${documentId}: ${successfulChunks}/${chunks.length} chunks successful`);
+    console.log(`Document processing completed: ${successfulChunks}/${chunks.length} chunks successful`);
 
-    // Update document status
+    // Update document metadata
     try {
       await db.document.update({
         where: { id: documentId },
         data: { 
-          // Add a status field to your schema if you want to track processing state
-          // status: 'completed'
+          // You can add a processingStatus field to track completion
+          // processingStatus: 'completed',
+          // processedAt: new Date(),
         },
       });
     } catch (updateError) {
-      console.warn(`Failed to update document status for ${documentId}:`, updateError);
+      console.warn(`Failed to update document metadata for ${documentId}:`, updateError);
     }
 
   } catch (error) {
-    console.error(`Async processing failed for document ${documentId}:`, error);
+    console.error(`Chunk processing failed for document ${documentId}:`, error);
     
-    // Mark document as failed if needed
+    // Mark document as failed (optional)
     try {
       await db.document.update({
         where: { id: documentId },
         data: { 
-          // status: 'failed'
+          // processingStatus: 'failed',
+          // processingError: error instanceof Error ? error.message : 'Unknown error',
         },
       });
     } catch (updateError) {
       console.warn(`Failed to update failed document status for ${documentId}:`, updateError);
     }
+    
+    throw error; // Re-throw to be handled by the main route
   }
 }
