@@ -50,8 +50,8 @@ const AuriVaultChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [systemReady, setSystemReady] = useState<boolean | null>(null);
-  
+  const [systemReady, setSystemReady] = useState<boolean>(true); // Default to true, assume system is ready
+
   const { organization } = useOrganization();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -85,15 +85,14 @@ const AuriVaultChat = () => {
     },
   });
 
-  const healthQuery = api.rag.healthCheck.useQuery(undefined, {
-    onSuccess: (data) => {
-      setSystemReady(data.status === 'healthy');
-    },
-    onError: () => {
-      setSystemReady(false);
-    },
-    refetchInterval: 30000, // Check every 30 seconds
-  });
+  // Removed expensive health check - we'll assume system is ready and handle errors gracefully
+  // const healthQuery = api.rag.healthCheck.useQuery(undefined, {
+  //   refetchInterval: (data) => {
+  //     // poll faster if offline, slower if healthy
+  //     if (!data) return 15000;
+  //     return data.status === "healthy" ? 60000 : 15000;
+  //   },
+  // });
 
   const suggestionsQuery = api.rag.getSuggestions.useQuery();
   const analyticsQuery = api.rag.getAnalytics.useQuery({ days: 7 });
@@ -110,7 +109,7 @@ const AuriVaultChat = () => {
 
   // Initialize with system message
   useEffect(() => {
-    if (organization && systemReady === true && messages.length === 0) {
+    if (organization && systemReady && messages.length === 0) {
       setMessages([{
         id: 1,
         type: 'system',
@@ -123,6 +122,19 @@ const AuriVaultChat = () => {
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isTyping) return;
+
+    // Check if we have documents before allowing chat
+    if (!suggestionsQuery.data?.documentCount || suggestionsQuery.data.documentCount === 0) {
+      const errorResponse: Message = {
+        id: Date.now() + 2,
+        type: 'assistant',
+        content: 'Please upload some documents first before asking questions. I need documents to search through and provide answers.',
+        timestamp: new Date(),
+        error: true,
+      };
+      setMessages((prev) => [...prev, errorResponse]);
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now(),
@@ -181,28 +193,33 @@ const AuriVaultChat = () => {
     }
   };
 
-  // System status indicator
+  // Simplified system status indicator
   const getStatusIndicator = () => {
-    if (systemReady === null) {
+    if (isTyping) {
       return (
         <div className="flex items-center space-x-2 px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-sm border border-amber-500/30">
           <Loader2 className="w-2 h-2 animate-spin" />
-          <span>Checking...</span>
+          <span>Processing...</span>
         </div>
       );
     }
-    if (systemReady) {
+    
+    // Check if we have documents to determine readiness
+    const hasDocuments = suggestionsQuery.data?.documentCount && suggestionsQuery.data.documentCount > 0;
+    
+    if (hasDocuments) {
       return (
         <div className="flex items-center space-x-2 px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm border border-emerald-500/30">
           <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-          <span>AI Online</span>
+          <span>AI Ready</span>
         </div>
       );
     }
+    
     return (
-      <div className="flex items-center space-x-2 px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-sm border border-red-500/30">
+      <div className="flex items-center space-x-2 px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-sm border border-amber-500/30">
         <AlertCircle className="w-2 h-2" />
-        <span>AI Offline</span>
+        <span>Upload Documents</span>
       </div>
     );
   };
@@ -433,7 +450,7 @@ const AuriVaultChat = () => {
                       <button
                         key={index}
                         onClick={() => handleSuggestionClick(suggestion)}
-                        disabled={!systemReady}
+                        disabled={isTyping || !suggestionsQuery.data?.documentCount || suggestionsQuery.data.documentCount === 0}
                         className="text-left p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-amber-500/50 rounded-xl text-sm text-slate-300 hover:text-white transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <div className="flex items-center space-x-2">
@@ -461,8 +478,12 @@ const AuriVaultChat = () => {
                           handleSendMessage();
                         }
                       }}
-                      placeholder={systemReady ? "Ask me anything about your documents..." : "AI system is starting up..."}
-                      disabled={!systemReady || isTyping}
+                      placeholder={
+                        suggestionsQuery.data?.documentCount && suggestionsQuery.data.documentCount > 0
+                          ? "Ask me anything about your documents..."
+                          : "Upload some documents first to start chatting..."
+                      }
+                      disabled={isTyping || !suggestionsQuery.data?.documentCount || suggestionsQuery.data.documentCount === 0}
                       className="w-full bg-transparent text-white placeholder-slate-400 resize-none focus:outline-none max-h-32 min-h-[24px] disabled:opacity-50"
                       rows={1}
                       style={{ height: 'auto' }}
@@ -476,7 +497,7 @@ const AuriVaultChat = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={handleSendMessage}
-                      disabled={!inputValue.trim() || isTyping || !systemReady}
+                      disabled={!inputValue.trim() || isTyping || !suggestionsQuery.data?.documentCount || suggestionsQuery.data.documentCount === 0}
                       className="p-3 bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-900 rounded-xl font-medium hover:shadow-lg hover:shadow-amber-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send className="w-5 h-5" />
@@ -516,13 +537,13 @@ const AuriVaultChat = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-400">AI Model</span>
                   <span className="text-sm font-medium text-white">
-                    {healthQuery.data?.groqModel || 'Llama 3.1 70B'}
+                    Llama 3.1 70B
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-400">Status</span>
-                  <span className={`text-sm font-medium ${systemReady ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {systemReady ? 'Online' : 'Offline'}
+                  <span className="text-sm font-medium text-emerald-400">
+                    {suggestionsQuery.data?.documentCount && suggestionsQuery.data.documentCount > 0 ? 'Ready' : 'Needs Documents'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
